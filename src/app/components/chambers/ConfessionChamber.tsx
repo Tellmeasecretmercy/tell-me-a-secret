@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
-import { Heart, ArrowLeft, Send, DollarSign } from 'lucide-react'
+import { Heart, ArrowLeft } from 'lucide-react'
+import PayPalHostedButton from '../PayPalHostedButton'
 
 interface ConfessionChamberProps {
   onBack: () => void
@@ -10,9 +11,6 @@ interface ConfessionChamberProps {
 
 export default function ConfessionChamber({ onBack }: ConfessionChamberProps) {
   const [confession, setConfession] = useState('')
-  const [amount, setAmount] = useState('2.00') // Default higher for confessions
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
   const [isComplete, setIsComplete] = useState(false)
   const [isClient, setIsClient] = useState(false)
 
@@ -32,53 +30,7 @@ export default function ConfessionChamber({ onBack }: ConfessionChamberProps) {
     }))
   }, [isClient])
 
-  const handleAmountChange = (value: string) => {
-    // Only allow numbers and decimal point
-    const numericValue = value.replace(/[^0-9.]/g, '')
-    
-    // Ensure minimum $1
-    const numValue = parseFloat(numericValue) || 1.00
-    if (numValue < 1.00) {
-      setAmount('1.00')
-    } else {
-      setAmount(numValue.toFixed(2))
-    }
-  }
-
-  const handleSubmit = async () => {
-    if (!confession.trim()) return
-    
-    setIsSubmitting(true)
-    setError('')
-
-    try {
-      const response = await fetch('/api/paypal/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          content: confession.trim(),
-          type: 'confession',
-          amount: amount
-        })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Payment failed')
-      }
-
-      // Redirect to PayPal
-      window.location.href = data.approvalUrl
-
-    } catch (err) {
-      console.error('Payment error:', err)
-      setError(err instanceof Error ? err.message : 'Payment failed')
-      setIsSubmitting(false)
-    }
-  }
-
-  // Completion state (this won't be used with PayPal redirect, but keeping for consistency)
+  // Completion state
   if (isComplete) {
     return (
       <div style={{
@@ -249,7 +201,7 @@ export default function ConfessionChamber({ onBack }: ConfessionChamberProps) {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            style={{ marginBottom: '2rem' }}
+            style={{ marginBottom: '3rem' }}
           >
             <div style={{ position: 'relative' }}>
               <textarea
@@ -294,142 +246,21 @@ export default function ConfessionChamber({ onBack }: ConfessionChamberProps) {
             </div>
           </motion.div>
 
-          {/* Amount Selection */}
+          {/* Back Button */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            style={{ marginBottom: '2rem' }}
-          >
-            <div style={{
-              background: 'rgba(30, 41, 59, 0.4)',
-              backdropFilter: 'blur(16px)',
-              border: '2px solid rgba(245, 158, 11, 0.2)',
-              borderRadius: '1rem',
-              padding: '1.5rem',
-              textAlign: 'center'
-            }}>
-              <h3 style={{
-                color: '#fef3c7',
-                fontSize: '1.25rem',
-                marginBottom: '1rem',
-                fontFamily: 'serif'
-              }}>
-                Choose Your Offering
-              </h3>
-              
-              <p style={{
-                color: '#fed7aa',
-                fontSize: '0.95rem',
-                marginBottom: '1.5rem',
-                lineHeight: 1.5
-              }}>
-                Your confession deserves compassionate space. Choose what feels right for this healing moment.
-              </p>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                marginBottom: '1rem'
-              }}>
-                <DollarSign size={24} color="#f59e0b" />
-                <input
-                  type="text"
-                  value={amount}
-                  onChange={(e) => handleAmountChange(e.target.value)}
-                  style={{
-                    fontSize: '2rem',
-                    fontWeight: 'bold',
-                    color: '#fef3c7',
-                    background: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    textAlign: 'center',
-                    width: '120px',
-                    fontFamily: 'monospace'
-                  }}
-                  placeholder="2.00"
-                />
-                <span style={{ color: '#fed7aa', fontSize: '1.5rem' }}>USD</span>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                gap: '0.5rem',
-                justifyContent: 'center',
-                flexWrap: 'wrap'
-              }}>
-                {['1.00', '2.00', '5.00', '10.00'].map((preset) => (
-                  <button
-                    key={preset}
-                    onClick={() => setAmount(preset)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: amount === preset 
-                        ? 'rgba(245, 158, 11, 0.3)' 
-                        : 'rgba(245, 158, 11, 0.1)',
-                      border: `1px solid ${amount === preset ? '#f59e0b' : 'rgba(245, 158, 11, 0.2)'}`,
-                      borderRadius: '0.5rem',
-                      color: '#fed7aa',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    ${preset}
-                  </button>
-                ))}
-              </div>
-
-              <p style={{
-                color: '#d97706',
-                fontSize: '0.8rem',
-                marginTop: '1rem',
-                fontStyle: 'italic'
-              }}>
-                Minimum $1.00 • Your generosity supports this healing sanctuary
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Error Message */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              style={{
-                marginBottom: '1.5rem',
-                padding: '1rem',
-                backgroundColor: 'rgba(127, 29, 29, 0.3)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '0.5rem',
-                color: '#fca5a5',
-                textAlign: 'center'
-              }}
-            >
-              {error}
-            </motion.div>
-          )}
-
-          {/* Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.0 }}
             style={{
               display: 'flex',
-              gap: '1.5rem',
               justifyContent: 'center',
-              flexWrap: 'wrap'
+              marginBottom: '2rem'
             }}
           >
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onBack}
-              disabled={isSubmitting}
               style={{
                 padding: '1rem 2rem',
                 backgroundColor: 'transparent',
@@ -438,8 +269,7 @@ export default function ConfessionChamber({ onBack }: ConfessionChamberProps) {
                 borderRadius: '9999px',
                 fontWeight: '600',
                 transition: 'all 0.3s ease',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                opacity: isSubmitting ? 0.5 : 1,
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.75rem'
@@ -448,41 +278,17 @@ export default function ConfessionChamber({ onBack }: ConfessionChamberProps) {
               <ArrowLeft size={20} />
               Back to Doors
             </motion.button>
-            
-            <motion.button
-              whileHover={{ 
-                scale: confession.trim() && !isSubmitting ? 1.05 : 1
-              }}
-              whileTap={{ scale: confession.trim() && !isSubmitting ? 0.95 : 1 }}
-              onClick={handleSubmit}
-              disabled={!confession.trim() || isSubmitting}
-              style={{
-                padding: '1rem 2rem',
-                borderRadius: '9999px',
-                fontWeight: '600',
-                transition: 'all 0.3s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                minWidth: '220px',
-                justifyContent: 'center',
-                cursor: confession.trim() && !isSubmitting ? 'pointer' : 'not-allowed',
-                background: confession.trim() && !isSubmitting 
-                  ? 'linear-gradient(135deg, #f59e0b, #d97706)'
-                  : '#64748b',
-                color: confession.trim() && !isSubmitting ? '#0f172a' : '#94a3b8',
-                border: 'none'
-              }}
-            >
-              {isSubmitting ? (
-                'Processing Payment...'
-              ) : (
-                <>
-                  <Send size={20} />
-                  Pay ${amount} & Find Peace
-                </>
-              )}
-            </motion.button>
+          </motion.div>
+
+          {/* PayPal Hosted Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.0 }}
+          >
+            <PayPalHostedButton 
+              onPaymentSuccess={() => setIsComplete(true)} 
+            />
           </motion.div>
 
           {/* Footer */}
@@ -502,6 +308,7 @@ export default function ConfessionChamber({ onBack }: ConfessionChamberProps) {
             </p>
             <p>Secure payment processing by PayPal</p>
           </motion.div>
+
         </div>
       </motion.div>
     </div>

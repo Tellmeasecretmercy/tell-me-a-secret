@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
-import { Sparkles, ArrowLeft, Send, DollarSign } from 'lucide-react'
+import { Sparkles, ArrowLeft } from 'lucide-react'
+import PayPalHostedButton from '../PayPalHostedButton'
 
 interface WishChamberProps {
   onBack: () => void
@@ -10,9 +11,6 @@ interface WishChamberProps {
 
 export default function WishChamber({ onBack }: WishChamberProps) {
   const [wish, setWish] = useState('')
-  const [amount, setAmount] = useState('3.00') // Default $3 for wishes (highest value)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
   const [isComplete, setIsComplete] = useState(false)
   const [isClient, setIsClient] = useState(false)
 
@@ -61,76 +59,7 @@ export default function WishChamber({ onBack }: WishChamberProps) {
     }))
   }, [isClient])
 
-  const handleAmountChange = (value: string) => {
-    // Only allow numbers and decimal point
-    const numericValue = value.replace(/[^0-9.]/g, '')
-    
-    // Ensure minimum $1
-    const numValue = parseFloat(numericValue) || 1.00
-    if (numValue < 1.00) {
-      setAmount('1.00')
-    } else {
-      setAmount(numValue.toFixed(2))
-    }
-  }
-
- const handleSubmit = async () => {
-  if (!wish.trim()) return
-  
-  setIsSubmitting(true)
-  setError('')
-
-  try {
-    const response = await fetch('/api/paypal/create-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        content: wish.trim(),
-        type: 'wish',
-        amount: amount
-      })
-    })
-
-    // Check if response is ok first
-    if (!response.ok) {
-      // Try to get error message, but handle empty response
-      let errorMessage = 'Payment failed'
-      try {
-        const errorData = await response.json()
-        errorMessage = errorData.error || errorMessage
-      } catch (jsonError) {
-        // If JSON parsing fails, use status text
-        errorMessage = `Payment failed: ${response.status} ${response.statusText}`
-      }
-      throw new Error(errorMessage)
-    }
-
-    // Only parse JSON if response is ok
-    let data
-    try {
-      data = await response.json()
-    } catch (jsonError) {
-      console.error('JSON parsing error:', jsonError)
-      throw new Error('Invalid response from payment server')
-    }
-
-    // Check if we have the approval URL
-    if (!data.approvalUrl) {
-      throw new Error('No payment URL received')
-    }
-
-    // Redirect to PayPal
-    window.location.href = data.approvalUrl
-
-  } catch (err) {
-    console.error('Payment error:', err)
-    setError(err instanceof Error ? err.message : 'Payment failed')
-    setIsSubmitting(false)
-  }
-}
-
-
-  // Completion state (won't be used with PayPal redirect, but keeping for consistency)
+  // Completion state
   if (isComplete) {
     return (
       <div style={{
@@ -442,7 +371,7 @@ export default function WishChamber({ onBack }: WishChamberProps) {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1 }}
-            style={{ marginBottom: '2rem' }}
+            style={{ marginBottom: '3rem' }}
           >
             <div style={{ position: 'relative' }}>
               <textarea
@@ -491,142 +420,21 @@ export default function WishChamber({ onBack }: WishChamberProps) {
             </div>
           </motion.div>
 
-          {/* Amount Selection */}
+          {/* Back Button */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2 }}
-            style={{ marginBottom: '3rem' }}
-          >
-            <div style={{
-              background: 'rgba(6, 78, 59, 0.3)',
-              backdropFilter: 'blur(20px)',
-              border: '2px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: '1.5rem',
-              padding: '1.5rem',
-              textAlign: 'center'
-            }}>
-              <h3 style={{
-                color: '#ecfdf5',
-                fontSize: '1.25rem',
-                marginBottom: '1rem',
-                fontFamily: 'serif'
-              }}>
-                Invest in Your Dreams
-              </h3>
-              
-              <p style={{
-                color: '#a7f3d0',
-                fontSize: '0.95rem',
-                marginBottom: '1.5rem',
-                lineHeight: 1.5
-              }}>
-                Your wish deserves cosmic energy. Choose what feels right for manifesting your dreams.
-              </p>
-
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                marginBottom: '1rem'
-              }}>
-                <DollarSign size={24} color="#10b981" />
-                <input
-                  type="text"
-                  value={amount}
-                  onChange={(e) => handleAmountChange(e.target.value)}
-                  style={{
-                    fontSize: '2rem',
-                    fontWeight: 'bold',
-                    color: '#ecfdf5',
-                    background: 'transparent',
-                    border: 'none',
-                    outline: 'none',
-                    textAlign: 'center',
-                    width: '120px',
-                    fontFamily: 'monospace'
-                  }}
-                  placeholder="3.00"
-                />
-                <span style={{ color: '#a7f3d0', fontSize: '1.5rem' }}>USD</span>
-              </div>
-
-              <div style={{
-                display: 'flex',
-                gap: '0.5rem',
-                justifyContent: 'center',
-                flexWrap: 'wrap'
-              }}>
-                {['1.00', '3.00', '7.00', '15.00'].map((preset) => (
-                  <button
-                    key={preset}
-                    onClick={() => setAmount(preset)}
-                    style={{
-                      padding: '0.5rem 1rem',
-                      background: amount === preset 
-                        ? 'rgba(16, 185, 129, 0.3)' 
-                        : 'rgba(16, 185, 129, 0.1)',
-                      border: `1px solid ${amount === preset ? '#10b981' : 'rgba(16, 185, 129, 0.2)'}`,
-                      borderRadius: '0.5rem',
-                      color: '#a7f3d0',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    ${preset}
-                  </button>
-                ))}
-              </div>
-
-              <p style={{
-                color: '#059669',
-                fontSize: '0.8rem',
-                marginTop: '1rem',
-                fontStyle: 'italic'
-              }}>
-                Minimum $1.00 • Your investment in dreams supports this cosmic space
-              </p>
-            </div>
-          </motion.div>
-
-          {/* Error Message */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              style={{
-                marginBottom: '1.5rem',
-                padding: '1rem',
-                backgroundColor: 'rgba(127, 29, 29, 0.3)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '0.5rem',
-                color: '#fca5a5',
-                textAlign: 'center'
-              }}
-            >
-              {error}
-            </motion.div>
-          )}
-
-          {/* Action Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.4 }}
             style={{
               display: 'flex',
-              gap: '2rem',
               justifyContent: 'center',
-              flexWrap: 'wrap'
+              marginBottom: '2rem'
             }}
           >
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onBack}
-              disabled={isSubmitting}
               style={{
                 padding: '1.3rem 2.5rem',
                 backgroundColor: 'transparent',
@@ -635,8 +443,7 @@ export default function WishChamber({ onBack }: WishChamberProps) {
                 borderRadius: '2rem',
                 fontWeight: '600',
                 transition: 'all 0.4s ease',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                opacity: isSubmitting ? 0.5 : 1,
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.75rem',
@@ -646,56 +453,17 @@ export default function WishChamber({ onBack }: WishChamberProps) {
               <ArrowLeft size={22} />
               Return to Doors
             </motion.button>
-            
-            <motion.button
-              whileHover={{ 
-                scale: wish.trim() && !isSubmitting ? 1.05 : 1,
-                boxShadow: wish.trim() && !isSubmitting ? '0 15px 40px rgba(16, 185, 129, 0.4)' : 'none'
-              }}
-              whileTap={{ scale: wish.trim() && !isSubmitting ? 0.95 : 1 }}
-              onClick={handleSubmit}
-              disabled={!wish.trim() || isSubmitting}
-              style={{
-                padding: '1.3rem 3rem',
-                borderRadius: '2rem',
-                fontWeight: '600',
-                transition: 'all 0.4s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                minWidth: '260px',
-                justifyContent: 'center',
-                cursor: wish.trim() && !isSubmitting ? 'pointer' : 'not-allowed',
-                background: wish.trim() && !isSubmitting 
-                  ? 'linear-gradient(135deg, #10b981, #059669)'
-                  : '#64748b',
-                color: wish.trim() && !isSubmitting ? '#ffffff' : '#94a3b8',
-                border: 'none',
-                fontSize: '1.05rem'
-              }}
-            >
-              {isSubmitting ? (
-                <>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    style={{
-                      width: '22px',
-                      height: '22px',
-                      border: '2px solid #ffffff',
-                      borderTop: '2px solid transparent',
-                      borderRadius: '50%'
-                    }}
-                  />
-                  Processing Payment...
-                </>
-              ) : (
-                <>
-                  <Send size={22} />
-                  Pay ${amount} & Cast Wish
-                </>
-              )}
-            </motion.button>
+          </motion.div>
+
+          {/* PayPal Hosted Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.4 }}
+          >
+            <PayPalHostedButton 
+              onPaymentSuccess={() => setIsComplete(true)} 
+            />
           </motion.div>
 
           {/* Chamber Footer */}
@@ -717,8 +485,10 @@ export default function WishChamber({ onBack }: WishChamberProps) {
               Secure payment processing by PayPal
             </p>
           </motion.div>
+
         </div>
       </motion.div>
     </div>
   )
 }
+
