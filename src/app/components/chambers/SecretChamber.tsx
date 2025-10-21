@@ -18,7 +18,7 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
     
     setIsSubmitting(true)
     
-    // Simulate the ritual completion
+    // Simulate the submission
     setTimeout(() => {
       setIsSubmitting(false)
       setIsComplete(true)
@@ -55,9 +55,10 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
             fontSize: '2.5rem',
             marginBottom: '1rem',
             color: '#fef3c7',
-            fontFamily: 'serif'
+            fontFamily: 'serif',
+            fontWeight: 300
           }}>
-            Your secret is sealed forever
+            Your secret has been safely shared
           </h2>
           
           <p style={{
@@ -66,8 +67,8 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
             lineHeight: 1.6,
             fontSize: '1.125rem'
           }}>
-            It has been released into the digital void, never to be seen again. 
-            You are free from its weight.
+            Thank you for trusting this space with your thoughts. 
+            Sometimes sharing what we carry can bring relief and healing.
           </p>
 
           <motion.button
@@ -79,13 +80,13 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
               background: 'linear-gradient(to right, #8b5cf6, #7c3aed)',
               color: '#ffffff',
               border: 'none',
-              borderRadius: '9999px',
-              fontWeight: '600',
+              borderRadius: '2rem',
+              fontWeight: '500',
               cursor: 'pointer',
               transition: 'all 0.3s ease'
             }}
           >
-            Return to Sanctuary
+            Return to Wellness Doors
           </motion.button>
         </motion.div>
       </div>
@@ -100,30 +101,29 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
       overflow: 'hidden'
     }}>
       
-      {/* Dark Mystical Particles */}
+      {/* Gentle Particles */}
       <div style={{ position: 'absolute', inset: 0 }}>
-        {[...Array(30)].map((_, i) => (
+        {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
             style={{
               position: 'absolute',
-              width: '8px',
-              height: '8px',
+              width: '6px',
+              height: '6px',
               backgroundColor: '#a855f7',
               borderRadius: '50%',
-              opacity: 0.4,
+              opacity: 0.3,
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
             }}
             animate={{
-              y: [0, -40, 0],
-              opacity: [0.2, 0.8, 0.2],
-              scale: [1, 1.5, 1],
+              y: [0, -30, 0],
+              opacity: [0.2, 0.6, 0.2],
             }}
             transition={{
-              duration: 5 + Math.random() * 3,
+              duration: 4 + Math.random() * 2,
               repeat: Infinity,
-              delay: Math.random() * 3,
+              delay: Math.random() * 2,
             }}
           />
         ))}
@@ -145,7 +145,7 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
       >
         <div style={{ maxWidth: '48rem', width: '100%' }}>
           
-          {/* Chamber Header */}
+          {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -155,11 +155,10 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
               <motion.div
                 animate={{ 
-                  rotate: [0, 5, -5, 0],
-                  scale: [1, 1.1, 1]
+                  scale: [1, 1.05, 1]
                 }}
                 transition={{ 
-                  duration: 4,
+                  duration: 3,
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
@@ -175,12 +174,13 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
             </div>
             
             <h1 style={{
-              fontSize: 'clamp(3rem, 8vw, 5rem)',
+              fontSize: 'clamp(2.5rem, 6vw, 4rem)',
               fontFamily: 'serif',
               color: '#fef3c7',
-              marginBottom: '1rem'
+              marginBottom: '1rem',
+              fontWeight: 300
             }}>
-              Chamber of Secrets
+              Share Your Secret
             </h1>
             <p style={{
               fontSize: '1.25rem',
@@ -189,12 +189,12 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
               maxWidth: '32rem',
               margin: '0 auto'
             }}>
-              In the shadows of this sacred space, release what weighs heavy on your soul. 
-              Your secret will be sealed in the digital void forever.
+              This is a safe, anonymous space to release what's been weighing on your mind. 
+              Sometimes sharing our burdens can bring unexpected relief.
             </p>
           </motion.div>
 
-          {/* Secret Input */}
+          {/* Input Area */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -205,7 +205,7 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
               <textarea
                 value={secret}
                 onChange={(e) => setSecret(e.target.value)}
-                placeholder="Whisper your secret into the void..."
+                placeholder="What would you like to share? Take your time..."
                 maxLength={500}
                 style={{
                   width: '100%',
@@ -217,7 +217,7 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
                   borderRadius: '1rem',
                   color: '#fef3c7',
                   fontSize: '1.125rem',
-                  fontFamily: 'serif',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
                   lineHeight: 1.6,
                   resize: 'none',
                   outline: 'none',
@@ -266,8 +266,8 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
                 backgroundColor: 'transparent',
                 border: '1px solid #64748b',
                 color: '#cbd5e1',
-                borderRadius: '9999px',
-                fontWeight: '600',
+                borderRadius: '2rem',
+                fontWeight: '500',
                 transition: 'all 0.3s ease',
                 cursor: isSubmitting ? 'not-allowed' : 'pointer',
                 opacity: isSubmitting ? 0.5 : 1,
@@ -277,7 +277,7 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
               }}
             >
               <ArrowLeft size={20} />
-              Return to Doors
+              Back to Doors
             </motion.button>
             
             <motion.button
@@ -287,37 +287,34 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
               disabled={!secret.trim() || isSubmitting}
               style={{
                 padding: '1rem 2rem',
-                borderRadius: '9999px',
-                fontWeight: '600',
+                borderRadius: '2rem',
+                fontWeight: '500',
                 transition: 'all 0.3s ease',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.75rem',
-                minWidth: '200px',
+                minWidth: '180px',
                 justifyContent: 'center',
                 cursor: secret.trim() && !isSubmitting ? 'pointer' : 'not-allowed',
                 background: secret.trim() && !isSubmitting 
                   ? 'linear-gradient(to right, #7c3aed, #6d28d9)'
                   : '#64748b',
                 color: secret.trim() && !isSubmitting ? '#ffffff' : '#94a3b8',
-                boxShadow: secret.trim() && !isSubmitting 
-                  ? '0 10px 15px -3px rgba(139, 92, 246, 0.3)'
-                  : 'none',
                 border: 'none'
               }}
             >
               {isSubmitting ? (
-                'Sealing Secret...'
+                'Sharing Safely...'
               ) : (
                 <>
                   <Send size={20} />
-                  Seal Secret Forever
+                  Share Anonymously
                 </>
               )}
             </motion.button>
           </motion.div>
 
-          {/* Chamber Footer */}
+          {/* Footer */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -330,9 +327,9 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
             }}
           >
             <p style={{ marginBottom: '0.5rem' }}>
-              Your secret will be encrypted and permanently deleted
+              Your submission is completely anonymous and secure
             </p>
-            <p>This is a safe space for your deepest thoughts</p>
+            <p>This space is designed to support your emotional wellbeing</p>
           </motion.div>
         </div>
       </motion.div>
