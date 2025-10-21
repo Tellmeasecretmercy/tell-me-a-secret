@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { Lock, Heart, Sparkles } from 'lucide-react'
-import SecretRitual from './components/rituals/SecretRitual'
+
 
 type RitualType = 'secret' | 'confession' | 'wish' | null
 
@@ -44,7 +44,7 @@ export default function HomePage() {
         background: 'linear-gradient(to bottom right, #0f172a, #581c87, #0f172a)',
         minHeight: '100vh'
       }}>
-        <SecretRitual onBack={() => setSelectedRitual(null)} />
+        
       </div>
     )
   }
