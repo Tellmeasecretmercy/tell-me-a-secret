@@ -4,6 +4,16 @@ const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID!
 const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET!
 const PAYPAL_BASE_URL = process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com'
 
+interface PayPalLink {
+  rel: string
+  href: string
+}
+
+interface PayPalOrder {
+  id: string
+  links?: PayPalLink[]
+}
+
 async function getAccessToken() {
   try {
     const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64')
@@ -100,10 +110,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const order = await response.json()
+    const order: PayPalOrder = await response.json()
     console.log('PayPal order created successfully:', order.id)
 
-    const approvalUrl = order.links?.find((link: any) => link.rel === 'approve')?.href
+    const approvalUrl = order.links?.find((link: PayPalLink) => link.rel === 'approve')?.href
 
     if (!approvalUrl) {
       console.error('No approval URL found in PayPal response')
@@ -127,3 +137,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

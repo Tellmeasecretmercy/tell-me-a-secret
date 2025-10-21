@@ -5,10 +5,15 @@ import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { CheckCircle, Sparkles, Heart, Lock } from 'lucide-react'
 
+interface PaymentDetails {
+  type: string
+  amount: string
+}
+
 function SuccessContent() {
   const searchParams = useSearchParams()
   const [status, setStatus] = useState('processing')
-  const [paymentDetails, setPaymentDetails] = useState<any>(null)
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null)
   
   useEffect(() => {
     const capturePayment = async () => {
@@ -120,7 +125,7 @@ function SuccessContent() {
           animate={{ opacity: 1, scale: 1 }}
           style={{ textAlign: 'center', maxWidth: '32rem', padding: '2rem' }}
         >
-          <div style={{ marginBottom: '2rem', color: '#ef4444' }}>
+          <div style={{ marginBottom: '2rem', color: '#ef4444', fontSize: '4rem' }}>
             ✕
           </div>
           <h1 style={{ 
@@ -178,7 +183,6 @@ function SuccessContent() {
               backgroundColor: ['#8b5cf6', '#f59e0b', '#10b981'][i % 3],
               borderRadius: '50%',
               left: `${Math.random() * 100}%`,
-              
               top: `${Math.random() * 100}%`,
             }}
             animate={{
