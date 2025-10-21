@@ -5,26 +5,42 @@ const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET!
 const PAYPAL_BASE_URL = process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com'
 
 async function getAccessToken() {
-  const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64')
-  
-  const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: 'grant_type=client_credentials'
-  })
+  try {
+    const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64')
+    
+    console.log('Getting PayPal access token...')
+    const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: 'grant_type=client_credentials'
+    })
 
-  const data = await response.json()
-  return data.access_token
+    if (!response.ok) {
+      console.error('Failed to get access token:', response.status, response.statusText)
+      throw new Error('Failed to authenticate with PayPal')
+    }
+
+    const data = await response.json()
+    console.log('Access token obtained successfully')
+    return data.access_token
+  } catch (error) {
+    console.error('Access token error:', error)
+    throw error
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('PayPal create order request received')
+    
     const { content, type, amount = '1.00' } = await request.json()
+    console.log('Request data:', { type, amount, contentLength: content?.length })
 
     if (!content || content.trim().length === 0) {
+      console.log('Content validation failed')
       return NextResponse.json(
         { error: 'Content is required' },
         { status: 400 }
@@ -34,12 +50,14 @@ export async function POST(request: NextRequest) {
     // Validate amount (minimum $1.00)
     const numAmount = parseFloat(amount)
     if (numAmount < 1.00) {
+      console.log('Amount validation failed:', amount)
       return NextResponse.json(
         { error: 'Minimum amount is $1.00' },
         { status: 400 }
       )
     }
 
+    console.log('Getting access token...')
     const accessToken = await getAccessToken()
 
     const orderData = {
@@ -61,6 +79,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('Creating PayPal order...')
     const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
@@ -70,20 +89,38 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(orderData)
     })
 
-    const order = await response.json()
+    console.log('PayPal response status:', response.status)
 
     if (!response.ok) {
-      console.error('PayPal order creation failed:', order)
-      throw new Error(order.message || 'Failed to create PayPal order')
+      const errorText = await response.text()
+      console.error('PayPal order creation failed:', response.status, errorText)
+      return NextResponse.json(
+        { error: 'Failed to create PayPal order' },
+        { status: 500 }
+      )
     }
 
+    const order = await response.json()
+    console.log('PayPal order created successfully:', order.id)
+
+    const approvalUrl = order.links?.find((link: any) => link.rel === 'approve')?.href
+
+    if (!approvalUrl) {
+      console.error('No approval URL found in PayPal response')
+      return NextResponse.json(
+        { error: 'No payment URL received from PayPal' },
+        { status: 500 }
+      )
+    }
+
+    console.log('Returning success response')
     return NextResponse.json({
       orderID: order.id,
-      approvalUrl: order.links.find((link: any) => link.rel === 'approve')?.href
+      approvalUrl: approvalUrl
     })
 
   } catch (error) {
-    console.error('PayPal error:', error)
+    console.error('PayPal API error:', error)
     return NextResponse.json(
       { error: 'Payment processing failed' },
       { status: 500 }

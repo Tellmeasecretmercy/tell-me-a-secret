@@ -74,38 +74,61 @@ export default function WishChamber({ onBack }: WishChamberProps) {
     }
   }
 
-  const handleSubmit = async () => {
-    if (!wish.trim()) return
-    
-    setIsSubmitting(true)
-    setError('')
+ const handleSubmit = async () => {
+  if (!wish.trim()) return
+  
+  setIsSubmitting(true)
+  setError('')
 
-    try {
-      const response = await fetch('/api/paypal/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          content: wish.trim(),
-          type: 'wish',
-          amount: amount
-        })
+  try {
+    const response = await fetch('/api/paypal/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        content: wish.trim(),
+        type: 'wish',
+        amount: amount
       })
+    })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Payment failed')
+    // Check if response is ok first
+    if (!response.ok) {
+      // Try to get error message, but handle empty response
+      let errorMessage = 'Payment failed'
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.error || errorMessage
+      } catch (jsonError) {
+        // If JSON parsing fails, use status text
+        errorMessage = `Payment failed: ${response.status} ${response.statusText}`
       }
-
-      // Redirect to PayPal
-      window.location.href = data.approvalUrl
-
-    } catch (err) {
-      console.error('Payment error:', err)
-      setError(err instanceof Error ? err.message : 'Payment failed')
-      setIsSubmitting(false)
+      throw new Error(errorMessage)
     }
+
+    // Only parse JSON if response is ok
+    let data
+    try {
+      data = await response.json()
+    } catch (jsonError) {
+      console.error('JSON parsing error:', jsonError)
+      throw new Error('Invalid response from payment server')
+    }
+
+    // Check if we have the approval URL
+    if (!data.approvalUrl) {
+      throw new Error('No payment URL received')
+    }
+
+    // Redirect to PayPal
+    window.location.href = data.approvalUrl
+
+  } catch (err) {
+    console.error('Payment error:', err)
+    setError(err instanceof Error ? err.message : 'Payment failed')
+    setIsSubmitting(false)
   }
+}
+
 
   // Completion state (won't be used with PayPal redirect, but keeping for consistency)
   if (isComplete) {
