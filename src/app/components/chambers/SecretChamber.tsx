@@ -239,7 +239,7 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
                 fontSize: '0.875rem',
                 color: '#94a3b8'
               }}>
-                {secret.length}/500
+                {secret.length}/5000
               </div>
             </div>
           </motion.div>
