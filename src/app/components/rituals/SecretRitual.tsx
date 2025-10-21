@@ -19,7 +19,6 @@ export default function SecretRitual({ onBack }: SecretRitualProps) {
   const handleSubmit = async () => {
     if (!secret.trim()) return
     
-    console.log('Starting Stripe payment...')
     setIsSubmitting(true)
     setError('')
 
@@ -32,26 +31,12 @@ export default function SecretRitual({ onBack }: SecretRitualProps) {
       })
 
       const data = await response.json()
-      console.log('Stripe response:', data)
 
       if (!response.ok) {
         throw new Error(data.error || 'Payment failed')
       }
 
-      // Redirect to Stripe Checkout
-      const stripe = await stripePromise
-      if (stripe && data.sessionId) {
-        console.log('Redirecting to Stripe checkout...')
-        const { error } = await stripe.redirectToCheckout({
-          sessionId: data.sessionId
-        })
-        
-        if (error) {
-          throw new Error(error.message)
-        }
-      } else {
-        throw new Error('Failed to load Stripe')
-      }
+      
     } catch (err) {
       console.error('Payment error:', err)
       setError(err instanceof Error ? err.message : 'Payment failed')
@@ -60,18 +45,18 @@ export default function SecretRitual({ onBack }: SecretRitualProps) {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem'
-      }}
-    >
-      <div style={{ maxWidth: '42rem', width: '100%' }}>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem'
+    }}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ maxWidth: '42rem', width: '100%' }}
+      >
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -149,17 +134,21 @@ export default function SecretRitual({ onBack }: SecretRitualProps) {
         </motion.div>
 
         {error && (
-          <div style={{
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '0.5rem',
-            padding: '1rem',
-            marginBottom: '1rem',
-            color: '#fca5a5',
-            textAlign: 'center'
-          }}>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              marginBottom: '1rem',
+              color: '#fca5a5',
+              textAlign: 'center'
+            }}
+          >
             {error}
-          </div>
+          </motion.div>
         )}
 
         <div style={{
@@ -237,7 +226,7 @@ export default function SecretRitual({ onBack }: SecretRitualProps) {
           <p>🌍 Trusted by millions of businesses globally</p>
           <p>🗑️ Your secret will be permanently deleted after payment</p>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   )
 }
