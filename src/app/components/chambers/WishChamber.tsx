@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
-import { Sparkles, ArrowLeft, Send } from 'lucide-react'
+import { Sparkles, ArrowLeft, Send, DollarSign } from 'lucide-react'
 
 interface WishChamberProps {
   onBack: () => void
@@ -10,7 +10,9 @@ interface WishChamberProps {
 
 export default function WishChamber({ onBack }: WishChamberProps) {
   const [wish, setWish] = useState('')
+  const [amount, setAmount] = useState('3.00') // Default $3 for wishes (highest value)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
   const [isComplete, setIsComplete] = useState(false)
   const [isClient, setIsClient] = useState(false)
 
@@ -59,19 +61,53 @@ export default function WishChamber({ onBack }: WishChamberProps) {
     }))
   }, [isClient])
 
+  const handleAmountChange = (value: string) => {
+    // Only allow numbers and decimal point
+    const numericValue = value.replace(/[^0-9.]/g, '')
+    
+    // Ensure minimum $1
+    const numValue = parseFloat(numericValue) || 1.00
+    if (numValue < 1.00) {
+      setAmount('1.00')
+    } else {
+      setAmount(numValue.toFixed(2))
+    }
+  }
+
   const handleSubmit = async () => {
     if (!wish.trim()) return
     
     setIsSubmitting(true)
-    
-    // Simulate the cosmic wish casting
-    setTimeout(() => {
+    setError('')
+
+    try {
+      const response = await fetch('/api/paypal/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          content: wish.trim(),
+          type: 'wish',
+          amount: amount
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Payment failed')
+      }
+
+      // Redirect to PayPal
+      window.location.href = data.approvalUrl
+
+    } catch (err) {
+      console.error('Payment error:', err)
+      setError(err instanceof Error ? err.message : 'Payment failed')
       setIsSubmitting(false)
-      setIsComplete(true)
-    }, 3000)
+    }
   }
 
-  // Completion state
+  // Completion state (won't be used with PayPal redirect, but keeping for consistency)
   if (isComplete) {
     return (
       <div style={{
@@ -374,7 +410,7 @@ export default function WishChamber({ onBack }: WishChamberProps) {
             >
               Cast your deepest dreams into the infinite cosmos. 
               The universe listens to every wish and conspires 
-              to bring your heart's desires into reality.
+              to bring your heart&apos;s desires into reality.
             </motion.p>
           </motion.div>
 
@@ -383,17 +419,17 @@ export default function WishChamber({ onBack }: WishChamberProps) {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1 }}
-            style={{ marginBottom: '3rem' }}
+            style={{ marginBottom: '2rem' }}
           >
             <div style={{ position: 'relative' }}>
               <textarea
                 value={wish}
                 onChange={(e) => setWish(e.target.value)}
-                placeholder="What is your heart's deepest desire? What dreams do you wish to manifest?"
+                placeholder="What is your heart&apos;s deepest desire? What dreams do you wish to manifest?"
                 maxLength={500}
                 style={{
                   width: '100%',
-                  height: '20rem',
+                  height: '18rem',
                   padding: '2rem',
                   backgroundColor: 'rgba(6, 78, 59, 0.3)',
                   backdropFilter: 'blur(20px)',
@@ -427,10 +463,129 @@ export default function WishChamber({ onBack }: WishChamberProps) {
                 color: '#a7f3d0',
                 opacity: 0.8
               }}>
-                {wish.length}/5000
+                {wish.length}/500
               </div>
             </div>
           </motion.div>
+
+          {/* Amount Selection */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2 }}
+            style={{ marginBottom: '3rem' }}
+          >
+            <div style={{
+              background: 'rgba(6, 78, 59, 0.3)',
+              backdropFilter: 'blur(20px)',
+              border: '2px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: '1.5rem',
+              padding: '1.5rem',
+              textAlign: 'center'
+            }}>
+              <h3 style={{
+                color: '#ecfdf5',
+                fontSize: '1.25rem',
+                marginBottom: '1rem',
+                fontFamily: 'serif'
+              }}>
+                Invest in Your Dreams
+              </h3>
+              
+              <p style={{
+                color: '#a7f3d0',
+                fontSize: '0.95rem',
+                marginBottom: '1.5rem',
+                lineHeight: 1.5
+              }}>
+                Your wish deserves cosmic energy. Choose what feels right for manifesting your dreams.
+              </p>
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                marginBottom: '1rem'
+              }}>
+                <DollarSign size={24} color="#10b981" />
+                <input
+                  type="text"
+                  value={amount}
+                  onChange={(e) => handleAmountChange(e.target.value)}
+                  style={{
+                    fontSize: '2rem',
+                    fontWeight: 'bold',
+                    color: '#ecfdf5',
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    textAlign: 'center',
+                    width: '120px',
+                    fontFamily: 'monospace'
+                  }}
+                  placeholder="3.00"
+                />
+                <span style={{ color: '#a7f3d0', fontSize: '1.5rem' }}>USD</span>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '0.5rem',
+                justifyContent: 'center',
+                flexWrap: 'wrap'
+              }}>
+                {['1.00', '3.00', '7.00', '15.00'].map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => setAmount(preset)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: amount === preset 
+                        ? 'rgba(16, 185, 129, 0.3)' 
+                        : 'rgba(16, 185, 129, 0.1)',
+                      border: `1px solid ${amount === preset ? '#10b981' : 'rgba(16, 185, 129, 0.2)'}`,
+                      borderRadius: '0.5rem',
+                      color: '#a7f3d0',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    ${preset}
+                  </button>
+                ))}
+              </div>
+
+              <p style={{
+                color: '#059669',
+                fontSize: '0.8rem',
+                marginTop: '1rem',
+                fontStyle: 'italic'
+              }}>
+                Minimum $1.00 • Your investment in dreams supports this cosmic space
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={{
+                marginBottom: '1.5rem',
+                padding: '1rem',
+                backgroundColor: 'rgba(127, 29, 29, 0.3)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '0.5rem',
+                color: '#fca5a5',
+                textAlign: 'center'
+              }}
+            >
+              {error}
+            </motion.div>
+          )}
 
           {/* Action Buttons */}
           <motion.div
@@ -485,7 +640,7 @@ export default function WishChamber({ onBack }: WishChamberProps) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.75rem',
-                minWidth: '240px',
+                minWidth: '260px',
                 justifyContent: 'center',
                 cursor: wish.trim() && !isSubmitting ? 'pointer' : 'not-allowed',
                 background: wish.trim() && !isSubmitting 
@@ -509,12 +664,12 @@ export default function WishChamber({ onBack }: WishChamberProps) {
                       borderRadius: '50%'
                     }}
                   />
-                  Casting Wish to Stars...
+                  Processing Payment...
                 </>
               ) : (
                 <>
                   <Send size={22} />
-                  Cast Wish to the Universe
+                  Pay ${amount} & Cast Wish
                 </>
               )}
             </motion.button>
@@ -536,7 +691,7 @@ export default function WishChamber({ onBack }: WishChamberProps) {
               Your wish joins the cosmic dance of infinite possibilities
             </p>
             <p style={{ opacity: 0.7 }}>
-              Trust in the universe's power to manifest your dreams
+              Secure payment processing by PayPal
             </p>
           </motion.div>
         </div>

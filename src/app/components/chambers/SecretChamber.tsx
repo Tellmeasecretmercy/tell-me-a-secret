@@ -1,8 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
-import { Lock, ArrowLeft, Send } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Lock, ArrowLeft, Send, DollarSign } from 'lucide-react'
 
 interface SecretChamberProps {
   onBack: () => void
@@ -10,22 +10,75 @@ interface SecretChamberProps {
 
 export default function SecretChamber({ onBack }: SecretChamberProps) {
   const [secret, setSecret] = useState('')
+  const [amount, setAmount] = useState('1.00') // Default $1 for secrets
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
   const [isComplete, setIsComplete] = useState(false)
+  const [isClient, setIsClient] = useState(false)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Generate stable particle positions only on client
+  const particles = useMemo(() => {
+    if (!isClient) return []
+    return Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      duration: 4 + Math.random() * 2,
+      delay: Math.random() * 2
+    }))
+  }, [isClient])
+
+  const handleAmountChange = (value: string) => {
+    // Only allow numbers and decimal point
+    const numericValue = value.replace(/[^0-9.]/g, '')
+    
+    // Ensure minimum $1
+    const numValue = parseFloat(numericValue) || 1.00
+    if (numValue < 1.00) {
+      setAmount('1.00')
+    } else {
+      setAmount(numValue.toFixed(2))
+    }
+  }
 
   const handleSubmit = async () => {
     if (!secret.trim()) return
     
     setIsSubmitting(true)
-    
-    // Simulate the submission
-    setTimeout(() => {
+    setError('')
+
+    try {
+      const response = await fetch('/api/paypal/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          content: secret.trim(),
+          type: 'secret',
+          amount: amount
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Payment failed')
+      }
+
+      // Redirect to PayPal
+      window.location.href = data.approvalUrl
+
+    } catch (err) {
+      console.error('Payment error:', err)
+      setError(err instanceof Error ? err.message : 'Payment failed')
       setIsSubmitting(false)
-      setIsComplete(true)
-    }, 2000)
+    }
   }
 
-  // Completion state
+  // Completion state (won't be used with PayPal redirect, but keeping for consistency)
   if (isComplete) {
     return (
       <div style={{
@@ -58,7 +111,7 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
             fontFamily: 'serif',
             fontWeight: 300
           }}>
-            Your secret has been safely shared
+            Your secret is sealed forever
           </h2>
           
           <p style={{
@@ -67,8 +120,8 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
             lineHeight: 1.6,
             fontSize: '1.125rem'
           }}>
-            Thank you for trusting this space with your thoughts. 
-            Sometimes sharing what we carry can bring relief and healing.
+            It has been released into the digital void, never to be seen again. 
+            You are free from its weight.
           </p>
 
           <motion.button
@@ -86,7 +139,7 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
               transition: 'all 0.3s ease'
             }}
           >
-            Return to Wellness Doors
+            Return to Sanctuary
           </motion.button>
         </motion.div>
       </div>
@@ -101,33 +154,35 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
       overflow: 'hidden'
     }}>
       
-      {/* Gentle Particles */}
-      <div style={{ position: 'absolute', inset: 0 }}>
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            style={{
-              position: 'absolute',
-              width: '6px',
-              height: '6px',
-              backgroundColor: '#a855f7',
-              borderRadius: '50%',
-              opacity: 0.3,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -30, 0],
-              opacity: [0.2, 0.6, 0.2],
-            }}
-            transition={{
-              duration: 4 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-            }}
-          />
-        ))}
-      </div>
+      {/* Gentle Particles - Only render on client */}
+      {isClient && (
+        <div style={{ position: 'absolute', inset: 0 }}>
+          {particles.map((particle) => (
+            <motion.div
+              key={particle.id}
+              style={{
+                position: 'absolute',
+                width: '6px',
+                height: '6px',
+                backgroundColor: '#a855f7',
+                borderRadius: '50%',
+                opacity: 0.3,
+                left: `${particle.left}%`,
+                top: `${particle.top}%`,
+              }}
+              animate={{
+                y: [0, -30, 0],
+                opacity: [0.2, 0.6, 0.2],
+              }}
+              transition={{
+                duration: particle.duration,
+                repeat: Infinity,
+                delay: particle.delay,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       <motion.div
         initial={{ opacity: 0 }}
@@ -189,12 +244,12 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
               maxWidth: '32rem',
               margin: '0 auto'
             }}>
-              This is a safe, anonymous space to release what's been weighing on your mind. 
-              Sometimes sharing our burdens can bring unexpected relief.
+              This is a safe, anonymous space to release what&apos;s been weighing on your mind. 
+              Your secret will be sealed forever.
             </p>
           </motion.div>
 
-          {/* Input Area */}
+          {/* Secret Input */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -239,16 +294,135 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
                 fontSize: '0.875rem',
                 color: '#94a3b8'
               }}>
-                {secret.length}/5000
+                {secret.length}/500
               </div>
             </div>
           </motion.div>
+
+          {/* Amount Selection */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+            style={{ marginBottom: '2rem' }}
+          >
+            <div style={{
+              background: 'rgba(30, 41, 59, 0.5)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(139, 92, 246, 0.2)',
+              borderRadius: '1rem',
+              padding: '1.5rem',
+              textAlign: 'center'
+            }}>
+              <h3 style={{
+                color: '#fef3c7',
+                fontSize: '1.25rem',
+                marginBottom: '1rem',
+                fontFamily: 'serif'
+              }}>
+                Choose Your Contribution
+              </h3>
+              
+              <p style={{
+                color: '#cbd5e1',
+                fontSize: '0.95rem',
+                marginBottom: '1.5rem',
+                lineHeight: 1.5
+              }}>
+                Your secret deserves a sacred space. Choose what feels right for this moment of release.
+              </p>
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                marginBottom: '1rem'
+              }}>
+                <DollarSign size={24} color="#8b5cf6" />
+                <input
+                  type="text"
+                  value={amount}
+                  onChange={(e) => handleAmountChange(e.target.value)}
+                  style={{
+                    fontSize: '2rem',
+                    fontWeight: 'bold',
+                    color: '#fef3c7',
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    textAlign: 'center',
+                    width: '120px',
+                    fontFamily: 'monospace'
+                  }}
+                  placeholder="1.00"
+                />
+                <span style={{ color: '#cbd5e1', fontSize: '1.5rem' }}>USD</span>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '0.5rem',
+                justifyContent: 'center',
+                flexWrap: 'wrap'
+              }}>
+                {['1.00', '3.00', '5.00', '10.00'].map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => setAmount(preset)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: amount === preset 
+                        ? 'rgba(139, 92, 246, 0.3)' 
+                        : 'rgba(139, 92, 246, 0.1)',
+                      border: `1px solid ${amount === preset ? '#8b5cf6' : 'rgba(139, 92, 246, 0.2)'}`,
+                      borderRadius: '0.5rem',
+                      color: '#cbd5e1',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    ${preset}
+                  </button>
+                ))}
+              </div>
+
+              <p style={{
+                color: '#94a3b8',
+                fontSize: '0.8rem',
+                marginTop: '1rem',
+                fontStyle: 'italic'
+              }}>
+                Minimum $1.00 • Your generosity supports this sacred space
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={{
+                marginBottom: '1.5rem',
+                padding: '1rem',
+                backgroundColor: 'rgba(127, 29, 29, 0.3)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '0.5rem',
+                color: '#fca5a5',
+                textAlign: 'center'
+              }}
+            >
+              {error}
+            </motion.div>
+          )}
 
           {/* Action Buttons */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 }}
+            transition={{ delay: 1.0 }}
             style={{
               display: 'flex',
               gap: '1.5rem',
@@ -293,7 +467,7 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.75rem',
-                minWidth: '180px',
+                minWidth: '220px',
                 justifyContent: 'center',
                 cursor: secret.trim() && !isSubmitting ? 'pointer' : 'not-allowed',
                 background: secret.trim() && !isSubmitting 
@@ -304,11 +478,11 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
               }}
             >
               {isSubmitting ? (
-                'Sharing Safely...'
+                'Processing Payment...'
               ) : (
                 <>
                   <Send size={20} />
-                  Share Anonymously
+                  Pay ${amount} & Seal Secret
                 </>
               )}
             </motion.button>
@@ -327,9 +501,9 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
             }}
           >
             <p style={{ marginBottom: '0.5rem' }}>
-              Your submission is completely anonymous and secure
+              Your secret will be encrypted and permanently deleted after payment
             </p>
-            <p>This space is designed to support your emotional wellbeing</p>
+            <p>Secure payment processing by PayPal</p>
           </motion.div>
         </div>
       </motion.div>
