@@ -427,7 +427,7 @@ export default function WishChamber({ onBack }: WishChamberProps) {
                 color: '#a7f3d0',
                 opacity: 0.8
               }}>
-                {wish.length}/500
+                {wish.length}/5000
               </div>
             </div>
           </motion.div>
