@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { CheckCircle, Sparkles, Heart, Lock } from 'lucide-react'
+import { trackPaymentCompleted } from '../lib/analytics'
 
 interface PaymentDetails {
   type: string
@@ -33,7 +34,11 @@ function SuccessContent() {
           
           if (response.ok && data.success) {
             setStatus('success')
-            setPaymentDetails({ type, amount: data.amount?.value || amount })
+            const finalAmount = data.amount?.value || amount
+            setPaymentDetails({ type, amount: finalAmount })
+            
+            // Track successful payment completion
+            trackPaymentCompleted(finalAmount, type as 'secret' | 'confession' | 'wish')
           } else {
             setStatus('error')
           }
@@ -78,6 +83,30 @@ function SuccessContent() {
         title: 'Payment Successful',
         message: 'Thank you for your contribution.'
       }
+    }
+  }
+
+  const getBackground = () => {
+    const type = paymentDetails?.type || 'secret'
+    switch (type) {
+      case 'secret': 
+        return 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 25%, #581c87 50%, #1e1b4b 75%, #0f172a 100%)'
+      case 'confession': 
+        return 'linear-gradient(135deg, #0f172a 0%, #92400e 25%, #f59e0b 50%, #92400e 75%, #0f172a 100%)'
+      case 'wish': 
+        return 'linear-gradient(135deg, #0f172a 0%, #064e3b 25%, #10b981 50%, #064e3b 75%, #0f172a 100%)'
+      default: 
+        return 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 25%, #581c87 50%, #1e1b4b 75%, #0f172a 100%)'
+    }
+  }
+
+  const getParticleColors = () => {
+    const type = paymentDetails?.type || 'secret'
+    switch (type) {
+      case 'secret': return ['#8b5cf6', '#a855f7', '#c084fc']
+      case 'confession': return ['#f59e0b', '#fbbf24', '#fcd34d']
+      case 'wish': return ['#10b981', '#34d399', '#6ee7b7']
+      default: return ['#8b5cf6', '#f59e0b', '#10b981']
     }
   }
 
@@ -159,6 +188,7 @@ function SuccessContent() {
   }
 
   const { title, message } = getMessage()
+  const particleColors = getParticleColors()
 
   return (
     <div style={{ 
@@ -166,34 +196,36 @@ function SuccessContent() {
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 25%, #581c87 50%, #1e1b4b 75%, #0f172a 100%)',
+      background: getBackground(),
       position: 'relative',
       overflow: 'hidden'
     }}>
       
-      {/* Celebration Particles */}
+      {/* Themed Celebration Particles */}
       <div style={{ position: 'absolute', inset: 0 }}>
-        {[...Array(20)].map((_, i) => (
+        {[...Array(30)].map((_, i) => (
           <motion.div
             key={i}
             style={{
               position: 'absolute',
-              width: '6px',
-              height: '6px',
-              backgroundColor: ['#8b5cf6', '#f59e0b', '#10b981'][i % 3],
+              width: `${4 + Math.random() * 4}px`,
+              height: `${4 + Math.random() * 4}px`,
+              backgroundColor: particleColors[i % particleColors.length],
               borderRadius: '50%',
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
             }}
             animate={{
-              y: [0, -100, 0],
+              y: [0, -150, 0],
+              x: [0, (Math.random() - 0.5) * 100, 0],
               opacity: [0, 1, 0],
               scale: [0, 2, 0],
             }}
             transition={{
-              duration: 3 + Math.random() * 2,
+              duration: 4 + Math.random() * 3,
               repeat: Infinity,
-              delay: Math.random() * 3,
+              delay: Math.random() * 4,
+              ease: "easeInOut"
             }}
           />
         ))}
@@ -257,15 +289,22 @@ function SuccessContent() {
             style={{
               background: 'rgba(30, 41, 59, 0.5)',
               borderRadius: '1rem',
-              padding: '1rem',
+              padding: '1.5rem',
               marginBottom: '2rem',
-              border: '1px solid rgba(139, 92, 246, 0.2)'
+              border: '1px solid rgba(139, 92, 246, 0.2)',
+              backdropFilter: 'blur(16px)'
             }}
           >
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+              Payment Completed Successfully
+            </p>
             <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
-              Payment Amount: <span style={{ color: '#fef3c7', fontWeight: '600' }}>
+              Amount: <span style={{ color: '#fef3c7', fontWeight: '600', fontSize: '1.1rem' }}>
                 ${paymentDetails.amount} USD
               </span>
+            </p>
+            <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '0.5rem', opacity: 0.8 }}>
+              Transaction processed securely by PayPal
             </p>
           </motion.div>
         )}
@@ -303,9 +342,24 @@ export default function SuccessPage() {
         minHeight: '100vh', 
         display: 'flex', 
         alignItems: 'center', 
-        justifyContent: 'center' 
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 25%, #581c87 50%, #1e1b4b 75%, #0f172a 100%)'
       }}>
-        <p>Loading...</p>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          style={{ textAlign: 'center' }}
+        >
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '3px solid rgba(139, 92, 246, 0.3)',
+            borderTop: '3px solid #8b5cf6',
+            borderRadius: '50%',
+            margin: '0 auto 1rem'
+          }} />
+          <p style={{ color: '#cbd5e1' }}>Loading...</p>
+        </motion.div>
       </div>
     }>
       <SuccessContent />
