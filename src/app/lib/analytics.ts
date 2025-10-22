@@ -2,8 +2,8 @@ export const GA_MEASUREMENT_ID = 'G-G5V6G66CLF'
 
 // Track page views
 export const pageview = (url: string) => {
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag('config', GA_MEASUREMENT_ID, {
+  if (typeof window !== 'undefined' && (window as unknown as { gtag?: Function }).gtag) {
+    (window as unknown as { gtag: Function }).gtag('config', GA_MEASUREMENT_ID, {
       page_path: url,
     })
   }
@@ -11,8 +11,8 @@ export const pageview = (url: string) => {
 
 // Track custom events
 export const event = (action: string, category: string, label?: string, value?: number) => {
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag('event', action, {
+  if (typeof window !== 'undefined' && (window as unknown as { gtag?: Function }).gtag) {
+    (window as unknown as { gtag: Function }).gtag('event', action, {
       event_category: category,
       event_label: label,
       value: value,
@@ -40,3 +40,4 @@ export const trackPaymentInitiated = (amount: string, chamberType: 'secret' | 'c
 export const trackPaymentCompleted = (amount: string, chamberType: 'secret' | 'confession' | 'wish') => {
   event('payment_completed', 'conversion', chamberType, parseFloat(amount))
 }
+
