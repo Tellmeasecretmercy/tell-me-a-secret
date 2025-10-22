@@ -1,9 +1,23 @@
 export const GA_MEASUREMENT_ID = 'G-G5V6G66CLF'
 
+// Define gtag function type
+type GtagFunction = (
+  command: 'config' | 'event',
+  targetId: string,
+  config?: Record<string, unknown>
+) => void
+
+// Extend window interface
+declare global {
+  interface Window {
+    gtag?: GtagFunction
+  }
+}
+
 // Track page views
 export const pageview = (url: string) => {
-  if (typeof window !== 'undefined' && (window as unknown as { gtag?: Function }).gtag) {
-    (window as unknown as { gtag: Function }).gtag('config', GA_MEASUREMENT_ID, {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('config', GA_MEASUREMENT_ID, {
       page_path: url,
     })
   }
@@ -11,8 +25,8 @@ export const pageview = (url: string) => {
 
 // Track custom events
 export const event = (action: string, category: string, label?: string, value?: number) => {
-  if (typeof window !== 'undefined' && (window as unknown as { gtag?: Function }).gtag) {
-    (window as unknown as { gtag: Function }).gtag('event', action, {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', action, {
       event_category: category,
       event_label: label,
       value: value,
