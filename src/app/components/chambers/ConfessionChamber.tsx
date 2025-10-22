@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
-import { Heart, ArrowLeft } from 'lucide-react'
+import { Heart, ArrowLeft, Send, DollarSign } from 'lucide-react'
 import PayPalHostedButton from '../PayPalHostedButton'
 
 interface ConfessionChamberProps {
@@ -11,6 +11,8 @@ interface ConfessionChamberProps {
 
 export default function ConfessionChamber({ onBack }: ConfessionChamberProps) {
   const [confession, setConfession] = useState('')
+  const [amount, setAmount] = useState('2.00') // Default $2 for confessions
+  const [showPayPalButton, setShowPayPalButton] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [isClient, setIsClient] = useState(false)
 
@@ -29,6 +31,25 @@ export default function ConfessionChamber({ onBack }: ConfessionChamberProps) {
       delay: Math.random() * 3
     }))
   }, [isClient])
+
+  const handleAmountChange = (value: string) => {
+    // Only allow numbers and decimal point
+    const numericValue = value.replace(/[^0-9.]/g, '')
+    
+    // Ensure minimum $1
+    const numValue = parseFloat(numericValue) || 1.00
+    if (numValue < 1.00) {
+      setAmount('1.00')
+    } else {
+      setAmount(numValue.toFixed(2))
+    }
+  }
+
+  const handlePayAndFindPeace = () => {
+    if (!confession.trim()) return
+    // Show PayPal button instead of redirecting
+    setShowPayPalButton(true)
+  }
 
   // Completion state
   if (isComplete) {
@@ -201,7 +222,7 @@ export default function ConfessionChamber({ onBack }: ConfessionChamberProps) {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            style={{ marginBottom: '3rem' }}
+            style={{ marginBottom: '2rem' }}
           >
             <div style={{ position: 'relative' }}>
               <textarea
@@ -246,15 +267,116 @@ export default function ConfessionChamber({ onBack }: ConfessionChamberProps) {
             </div>
           </motion.div>
 
-          {/* Back Button */}
+          {/* Amount Selection */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
+            style={{ marginBottom: '2rem' }}
+          >
+            <div style={{
+              background: 'rgba(30, 41, 59, 0.4)',
+              backdropFilter: 'blur(16px)',
+              border: '2px solid rgba(245, 158, 11, 0.2)',
+              borderRadius: '1rem',
+              padding: '1.5rem',
+              textAlign: 'center'
+            }}>
+              <h3 style={{
+                color: '#fef3c7',
+                fontSize: '1.25rem',
+                marginBottom: '1rem',
+                fontFamily: 'serif'
+              }}>
+                Choose Your Offering
+              </h3>
+              
+              <p style={{
+                color: '#fed7aa',
+                fontSize: '0.95rem',
+                marginBottom: '1.5rem',
+                lineHeight: 1.5
+              }}>
+                Your confession deserves compassionate space. Choose what feels right for this healing moment.
+              </p>
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                marginBottom: '1rem'
+              }}>
+                <DollarSign size={24} color="#f59e0b" />
+                <input
+                  type="text"
+                  value={amount}
+                  onChange={(e) => handleAmountChange(e.target.value)}
+                  style={{
+                    fontSize: '2rem',
+                    fontWeight: 'bold',
+                    color: '#fef3c7',
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    textAlign: 'center',
+                    width: '120px',
+                    fontFamily: 'monospace'
+                  }}
+                  placeholder="2.00"
+                />
+                <span style={{ color: '#fed7aa', fontSize: '1.5rem' }}>USD</span>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '0.5rem',
+                justifyContent: 'center',
+                flexWrap: 'wrap'
+              }}>
+                {['1.00', '2.00', '5.00', '10.00'].map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => setAmount(preset)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: amount === preset 
+                        ? 'rgba(245, 158, 11, 0.3)' 
+                        : 'rgba(245, 158, 11, 0.1)',
+                      border: `1px solid ${amount === preset ? '#f59e0b' : 'rgba(245, 158, 11, 0.2)'}`,
+                      borderRadius: '0.5rem',
+                      color: '#fed7aa',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    ${preset}
+                  </button>
+                ))}
+              </div>
+
+              <p style={{
+                color: '#d97706',
+                fontSize: '0.8rem',
+                marginTop: '1rem',
+                fontStyle: 'italic'
+              }}>
+                Minimum $1.00 • Your generosity supports this healing sanctuary
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Action Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.0 }}
             style={{
               display: 'flex',
+              gap: '1.5rem',
               justifyContent: 'center',
-              marginBottom: '2rem'
+              flexWrap: 'wrap'
             }}
           >
             <motion.button
@@ -278,17 +400,56 @@ export default function ConfessionChamber({ onBack }: ConfessionChamberProps) {
               <ArrowLeft size={20} />
               Back to Doors
             </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: confession.trim() ? 1.05 : 1 }}
+              whileTap={{ scale: confession.trim() ? 0.95 : 1 }}
+              onClick={handlePayAndFindPeace}
+              disabled={!confession.trim()}
+              style={{
+                padding: '1rem 2rem',
+                borderRadius: '9999px',
+                fontWeight: '600',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                minWidth: '220px',
+                justifyContent: 'center',
+                cursor: confession.trim() ? 'pointer' : 'not-allowed',
+                background: confession.trim() 
+                  ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+                  : '#64748b',
+                color: confession.trim() ? '#0f172a' : '#94a3b8',
+                border: 'none'
+              }}
+            >
+              <Send size={20} />
+              Pay ${amount} & Find Peace
+            </motion.button>
           </motion.div>
 
-          {/* PayPal Hosted Button */}
+          {/* PayPal Button appears here when clicked */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.0 }}
+            initial={false}
+            animate={{
+              height: showPayPalButton ? 'auto' : 0,
+              opacity: showPayPalButton ? 1 : 0
+            }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+            style={{ overflow: 'hidden', marginTop: showPayPalButton ? '2rem' : 0 }}
           >
-            <PayPalHostedButton 
-              onPaymentSuccess={() => setIsComplete(true)} 
-            />
+            {showPayPalButton && (
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <PayPalHostedButton 
+                  onPaymentSuccess={() => setIsComplete(true)} 
+                />
+              </motion.div>
+            )}
           </motion.div>
 
           {/* Footer */}

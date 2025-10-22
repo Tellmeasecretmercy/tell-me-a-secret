@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
-import { Sparkles, ArrowLeft } from 'lucide-react'
+import { Sparkles, ArrowLeft, Send, DollarSign } from 'lucide-react'
 import PayPalHostedButton from '../PayPalHostedButton'
 
 interface WishChamberProps {
@@ -11,6 +11,8 @@ interface WishChamberProps {
 
 export default function WishChamber({ onBack }: WishChamberProps) {
   const [wish, setWish] = useState('')
+  const [amount, setAmount] = useState('3.00') // Default $3 for wishes (highest value)
+  const [showPayPalButton, setShowPayPalButton] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [isClient, setIsClient] = useState(false)
 
@@ -58,6 +60,25 @@ export default function WishChamber({ onBack }: WishChamberProps) {
       delay: Math.random() * 3
     }))
   }, [isClient])
+
+  const handleAmountChange = (value: string) => {
+    // Only allow numbers and decimal point
+    const numericValue = value.replace(/[^0-9.]/g, '')
+    
+    // Ensure minimum $1
+    const numValue = parseFloat(numericValue) || 1.00
+    if (numValue < 1.00) {
+      setAmount('1.00')
+    } else {
+      setAmount(numValue.toFixed(2))
+    }
+  }
+
+  const handleCastWish = () => {
+    if (!wish.trim()) return
+    // Show PayPal button instead of redirecting
+    setShowPayPalButton(true)
+  }
 
   // Completion state
   if (isComplete) {
@@ -371,7 +392,7 @@ export default function WishChamber({ onBack }: WishChamberProps) {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1 }}
-            style={{ marginBottom: '3rem' }}
+            style={{ marginBottom: '2rem' }}
           >
             <div style={{ position: 'relative' }}>
               <textarea
@@ -420,15 +441,116 @@ export default function WishChamber({ onBack }: WishChamberProps) {
             </div>
           </motion.div>
 
-          {/* Back Button */}
+          {/* Amount Selection */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2 }}
+            style={{ marginBottom: '3rem' }}
+          >
+            <div style={{
+              background: 'rgba(6, 78, 59, 0.3)',
+              backdropFilter: 'blur(20px)',
+              border: '2px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: '1.5rem',
+              padding: '1.5rem',
+              textAlign: 'center'
+            }}>
+              <h3 style={{
+                color: '#ecfdf5',
+                fontSize: '1.25rem',
+                marginBottom: '1rem',
+                fontFamily: 'serif'
+              }}>
+                Invest in Your Dreams
+              </h3>
+              
+              <p style={{
+                color: '#a7f3d0',
+                fontSize: '0.95rem',
+                marginBottom: '1.5rem',
+                lineHeight: 1.5
+              }}>
+                Your wish deserves cosmic energy. Choose what feels right for manifesting your dreams.
+              </p>
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                marginBottom: '1rem'
+              }}>
+                <DollarSign size={24} color="#10b981" />
+                <input
+                  type="text"
+                  value={amount}
+                  onChange={(e) => handleAmountChange(e.target.value)}
+                  style={{
+                    fontSize: '2rem',
+                    fontWeight: 'bold',
+                    color: '#ecfdf5',
+                    background: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    textAlign: 'center',
+                    width: '120px',
+                    fontFamily: 'monospace'
+                  }}
+                  placeholder="3.00"
+                />
+                <span style={{ color: '#a7f3d0', fontSize: '1.5rem' }}>USD</span>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '0.5rem',
+                justifyContent: 'center',
+                flexWrap: 'wrap'
+              }}>
+                {['1.00', '3.00', '7.00', '15.00'].map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => setAmount(preset)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: amount === preset 
+                        ? 'rgba(16, 185, 129, 0.3)' 
+                        : 'rgba(16, 185, 129, 0.1)',
+                      border: `1px solid ${amount === preset ? '#10b981' : 'rgba(16, 185, 129, 0.2)'}`,
+                      borderRadius: '0.5rem',
+                      color: '#a7f3d0',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    ${preset}
+                  </button>
+                ))}
+              </div>
+
+              <p style={{
+                color: '#059669',
+                fontSize: '0.8rem',
+                marginTop: '1rem',
+                fontStyle: 'italic'
+              }}>
+                Minimum $1.00 • Your investment in dreams supports this cosmic space
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Action Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.4 }}
             style={{
               display: 'flex',
+              gap: '2rem',
               justifyContent: 'center',
-              marginBottom: '2rem'
+              flexWrap: 'wrap'
             }}
           >
             <motion.button
@@ -453,17 +575,60 @@ export default function WishChamber({ onBack }: WishChamberProps) {
               <ArrowLeft size={22} />
               Return to Doors
             </motion.button>
+            
+            <motion.button
+              whileHover={{ 
+                scale: wish.trim() ? 1.05 : 1,
+                boxShadow: wish.trim() ? '0 15px 40px rgba(16, 185, 129, 0.4)' : 'none'
+              }}
+              whileTap={{ scale: wish.trim() ? 0.95 : 1 }}
+              onClick={handleCastWish}
+              disabled={!wish.trim()}
+              style={{
+                padding: '1.3rem 3rem',
+                borderRadius: '2rem',
+                fontWeight: '600',
+                transition: 'all 0.4s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                minWidth: '260px',
+                justifyContent: 'center',
+                cursor: wish.trim() ? 'pointer' : 'not-allowed',
+                background: wish.trim() 
+                  ? 'linear-gradient(135deg, #10b981, #059669)'
+                  : '#64748b',
+                color: wish.trim() ? '#ffffff' : '#94a3b8',
+                border: 'none',
+                fontSize: '1.05rem'
+              }}
+            >
+              <Send size={22} />
+              Pay ${amount} & Cast Wish
+            </motion.button>
           </motion.div>
 
-          {/* PayPal Hosted Button */}
+          {/* PayPal Button appears here when clicked */}
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.4 }}
+            initial={false}
+            animate={{
+              height: showPayPalButton ? 'auto' : 0,
+              opacity: showPayPalButton ? 1 : 0
+            }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+            style={{ overflow: 'hidden', marginTop: showPayPalButton ? '2rem' : 0 }}
           >
-            <PayPalHostedButton 
-              onPaymentSuccess={() => setIsComplete(true)} 
-            />
+            {showPayPalButton && (
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <PayPalHostedButton 
+                  onPaymentSuccess={() => setIsComplete(true)} 
+                />
+              </motion.div>
+            )}
           </motion.div>
 
           {/* Chamber Footer */}
@@ -491,4 +656,3 @@ export default function WishChamber({ onBack }: WishChamberProps) {
     </div>
   )
 }
-

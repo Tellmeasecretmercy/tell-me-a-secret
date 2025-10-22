@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { useState, useEffect, useMemo } from 'react'
 import { Lock, ArrowLeft, Send, DollarSign } from 'lucide-react'
+import PayPalHostedButton from '../PayPalHostedButton'
 
 interface SecretChamberProps {
   onBack: () => void
@@ -11,8 +12,7 @@ interface SecretChamberProps {
 export default function SecretChamber({ onBack }: SecretChamberProps) {
   const [secret, setSecret] = useState('')
   const [amount, setAmount] = useState('1.00') // Default $1 for secrets
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const [showPayPalButton, setShowPayPalButton] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [isClient, setIsClient] = useState(false)
 
@@ -45,40 +45,13 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
     }
   }
 
-  const handleSubmit = async () => {
+  const handlePayAndSeal = () => {
     if (!secret.trim()) return
-    
-    setIsSubmitting(true)
-    setError('')
-
-    try {
-      const response = await fetch('/api/paypal/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          content: secret.trim(),
-          type: 'secret',
-          amount: amount
-        })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Payment failed')
-      }
-
-      // Redirect to PayPal
-      window.location.href = data.approvalUrl
-
-    } catch (err) {
-      console.error('Payment error:', err)
-      setError(err instanceof Error ? err.message : 'Payment failed')
-      setIsSubmitting(false)
-    }
+    // Show PayPal button instead of redirecting
+    setShowPayPalButton(true)
   }
 
-  // Completion state (won't be used with PayPal redirect, but keeping for consistency)
+  // Completion state
   if (isComplete) {
     return (
       <div style={{
@@ -399,25 +372,6 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
             </div>
           </motion.div>
 
-          {/* Error Message */}
-          {error && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              style={{
-                marginBottom: '1.5rem',
-                padding: '1rem',
-                backgroundColor: 'rgba(127, 29, 29, 0.3)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: '0.5rem',
-                color: '#fca5a5',
-                textAlign: 'center'
-              }}
-            >
-              {error}
-            </motion.div>
-          )}
-
           {/* Action Buttons */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -434,7 +388,6 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onBack}
-              disabled={isSubmitting}
               style={{
                 padding: '1rem 2rem',
                 backgroundColor: 'transparent',
@@ -443,8 +396,7 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
                 borderRadius: '2rem',
                 fontWeight: '500',
                 transition: 'all 0.3s ease',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                opacity: isSubmitting ? 0.5 : 1,
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.75rem'
@@ -455,10 +407,10 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
             </motion.button>
             
             <motion.button
-              whileHover={{ scale: secret.trim() && !isSubmitting ? 1.05 : 1 }}
-              whileTap={{ scale: secret.trim() && !isSubmitting ? 0.95 : 1 }}
-              onClick={handleSubmit}
-              disabled={!secret.trim() || isSubmitting}
+              whileHover={{ scale: secret.trim() ? 1.05 : 1 }}
+              whileTap={{ scale: secret.trim() ? 0.95 : 1 }}
+              onClick={handlePayAndSeal}
+              disabled={!secret.trim()}
               style={{
                 padding: '1rem 2rem',
                 borderRadius: '2rem',
@@ -469,23 +421,40 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
                 gap: '0.75rem',
                 minWidth: '220px',
                 justifyContent: 'center',
-                cursor: secret.trim() && !isSubmitting ? 'pointer' : 'not-allowed',
-                background: secret.trim() && !isSubmitting 
+                cursor: secret.trim() ? 'pointer' : 'not-allowed',
+                background: secret.trim() 
                   ? 'linear-gradient(to right, #7c3aed, #6d28d9)'
                   : '#64748b',
-                color: secret.trim() && !isSubmitting ? '#ffffff' : '#94a3b8',
+                color: secret.trim() ? '#ffffff' : '#94a3b8',
                 border: 'none'
               }}
             >
-              {isSubmitting ? (
-                'Processing Payment...'
-              ) : (
-                <>
-                  <Send size={20} />
-                  Pay ${amount} & Seal Secret
-                </>
-              )}
+              <Send size={20} />
+              Pay ${amount} & Seal Secret
             </motion.button>
+          </motion.div>
+
+          {/* PayPal Button appears here when clicked */}
+          <motion.div
+            initial={false}
+            animate={{
+              height: showPayPalButton ? 'auto' : 0,
+              opacity: showPayPalButton ? 1 : 0
+            }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+            style={{ overflow: 'hidden', marginTop: showPayPalButton ? '2rem' : 0 }}
+          >
+            {showPayPalButton && (
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <PayPalHostedButton 
+                  onPaymentSuccess={() => setIsComplete(true)} 
+                />
+              </motion.div>
+            )}
           </motion.div>
 
           {/* Footer */}
@@ -505,6 +474,7 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
             </p>
             <p>Secure payment processing by PayPal</p>
           </motion.div>
+
         </div>
       </motion.div>
     </div>
