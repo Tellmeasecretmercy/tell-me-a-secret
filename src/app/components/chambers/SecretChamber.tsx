@@ -386,7 +386,7 @@ export default function SecretChamber({ onBack }: SecretChamberProps) {
               <textarea
                 value={secret}
                 onChange={handleSecretChange}
-                placeholder="What would you like to share? Take your time..."
+               placeholder="What would you like to share? Take your time..."
                 maxLength={500}
                 style={{
                   width: '100%',
