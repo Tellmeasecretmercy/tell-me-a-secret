@@ -25,15 +25,44 @@ export default function HomePage() {
     return () => clearTimeout(introTimer)
   }, [])
 
-  // Generate stable particle positions only on client
+  // MANY MORE magical particles!
   const particles = useMemo(() => {
     if (!isClient) return []
-    return Array.from({ length: 30 }, (_, i) => ({
+    return Array.from({ length: 80 }, (_, i) => ({ // INCREASED from 30 to 80!
       id: i,
       left: Math.random() * 100,
       top: Math.random() * 100,
       duration: 5 + Math.random() * 3,
-      delay: Math.random() * 3
+      delay: Math.random() * 3,
+      color: ['#fbbf24', '#8b5cf6', '#10b981', '#f59e0b'][Math.floor(Math.random() * 4)] // Multiple colors!
+    }))
+  }, [isClient])
+
+  // NEW: Floating stars
+  const stars = useMemo(() => {
+    if (!isClient) return []
+    return Array.from({ length: 120 }, (_, i) => ({ // TONS of stars!
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      opacity: Math.random() * 0.8,
+      duration: 3 + Math.random() * 4,
+      delay: Math.random() * 3,
+      size: Math.random() > 0.8 ? 3 : 2 // Some bigger stars
+    }))
+  }, [isClient])
+
+  // NEW: Floating bubbles
+  const bubbles = useMemo(() => {
+    if (!isClient) return []
+    return Array.from({ length: 40 }, (_, i) => ({ // Magical bubbles!
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      size: 4 + Math.random() * 8,
+      duration: 8 + Math.random() * 4,
+      delay: Math.random() * 5,
+      color: ['#8b5cf6', '#f59e0b', '#10b981'][Math.floor(Math.random() * 3)]
     }))
   }, [isClient])
 
@@ -90,31 +119,90 @@ export default function HomePage() {
       overflow: 'hidden'
     }}>
       
-      {/* Gentle Background Particles - Only render on client */}
+      {/* MANY MORE magical particles - Only render on client */}
       {isClient && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
+          {/* Enhanced floating particles */}
           {particles.map((particle) => (
             <motion.div
               key={particle.id}
               style={{
                 position: 'absolute',
-                width: '4px',
-                height: '4px',
-                backgroundColor: '#fbbf24',
+                width: '5px',
+                height: '5px',
+                backgroundColor: particle.color,
                 borderRadius: '50%',
-                opacity: 0.4,
+                opacity: 0.6,
                 left: `${particle.left}%`,
                 top: `${particle.top}%`,
+                boxShadow: `0 0 10px ${particle.color}`,
               }}
               animate={{
-                y: [0, -30, 0],
-                opacity: [0.2, 0.6, 0.2],
-                scale: [1, 1.2, 1],
+                y: [0, -40, 0],
+                opacity: [0.3, 0.8, 0.3],
+                scale: [1, 1.5, 1],
               }}
               transition={{
                 duration: particle.duration,
                 repeat: Infinity,
                 delay: particle.delay,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+
+          {/* NEW: Twinkling stars */}
+          {stars.map((star) => (
+            <motion.div
+              key={`star-${star.id}`}
+              style={{
+                position: 'absolute',
+                width: `${star.size}px`,
+                height: `${star.size}px`,
+                backgroundColor: '#ffffff',
+                borderRadius: '50%',
+                opacity: star.opacity,
+                left: `${star.left}%`,
+                top: `${star.top}%`,
+                boxShadow: '0 0 4px #ffffff',
+              }}
+              animate={{
+                opacity: [0.2, 1, 0.2],
+                scale: [1, 1.5, 1],
+              }}
+              transition={{
+                duration: star.duration,
+                repeat: Infinity,
+                delay: star.delay,
+              }}
+            />
+          ))}
+
+          {/* NEW: Floating magical bubbles */}
+          {bubbles.map((bubble) => (
+            <motion.div
+              key={`bubble-${bubble.id}`}
+              style={{
+                position: 'absolute',
+                width: `${bubble.size}px`,
+                height: `${bubble.size}px`,
+                backgroundColor: 'transparent',
+                border: `1px solid ${bubble.color}`,
+                borderRadius: '50%',
+                opacity: 0.4,
+                left: `${bubble.left}%`,
+                top: `${bubble.top}%`,
+              }}
+              animate={{
+                y: [0, -120, 0],
+                x: [0, Math.sin(bubble.id) * 40, 0],
+                opacity: [0.2, 0.6, 0.2],
+                scale: [1, 1.8, 1],
+              }}
+              transition={{
+                duration: bubble.duration,
+                repeat: Infinity,
+                delay: bubble.delay,
                 ease: "easeInOut"
               }}
             />
