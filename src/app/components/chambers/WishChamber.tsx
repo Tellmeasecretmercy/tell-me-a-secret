@@ -512,7 +512,7 @@ export default function WishChamber({ onBack }: WishChamberProps) {
               <textarea
                 value={wish}
                 onChange={handleWishChange}
-                placeholder="What is your heart's deepest desire? What dreams do you wish to manifest?"
+                  placeholder="What is your heart&apos;s deepest desire? What dreams do you wish to manifest?"
                 maxLength={500}
                 style={{
                   width: '100%',
